@@ -1,0 +1,63 @@
+[project]
+name = "TaylorSeer"
+version = "v0.1.0"
+description = "From Reusing to Forecasting: Accelerating Diffusion Models with TaylorSeers"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Ziyang Fan", email = "bugkiller.fzy@gmail.com" }]
+dependencies = [
+    "accelerate>=1.14.0",
+    "diffusers>=0.39.0",
+    "huggingface-hub>=1.26.0",
+    "loguru>=0.7.3",
+    "safetensors>=0.4",
+    "torch>=2.13.0",
+    "torchvision>=0.28.0",
+    "tqdm>=4.70.0",
+    "transformers>=4.57.3",
+]
+
+[project.optional-dependencies]
+gpu = ["flash-attn>=2.8.3; sys_platform == 'linux'"]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv.extra-build-dependencies]
+flash-attn = ["torch"]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'darwin'" },
+    { index = "pytorch-cu126", marker = "sys_platform == 'linux'" },
+]
+torchvision = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'darwin'" },
+    { index = "pytorch-cu126", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[dependency-groups]
+dev = ["pytest>=9.1.1"]
+
+[project.urls]
+"Homepage" = "https://taylorseer.github.io"
+"Repository" = "https://github.com/Aporifold/TaylorSeer"
+"Bug Tracker" = "https://github.com/Aporifold/TaylorSeer/issues"
