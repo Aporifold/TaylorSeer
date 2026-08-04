@@ -81,4 +81,4 @@ python playground/flux.py \
 
 ## 👏Acknowledgement
 
-This project is built upon the official implementation of [TaylorSeer](https://github.com/Shenyi-Z/TaylorSeer). Thanks for their excellent work!
+This project is built upon the official implementation of [TaylorSeer](https://github.com/Shenyi-Z/TaylorSeer) and [diffusers](https://github.com/huggingface/diffusers). Thanks for their excellent work!
