@@ -39,6 +39,22 @@ class BaseAdapter(ABC):
                 for use by patched forwards while `pipeline` is running.
         """
 
+    def context_fn(self, pipeline) -> Callable[[], str | None]:
+        """Return a zero-arg callable exposing the current conditioning branch.
+
+        Override for models whose denoising loop runs multiple independent
+        conditioning branches per step (e.g. cond/uncond under classifier-free
+        guidance), so each branch gets its own cache instead of sharing one.
+
+        Args:
+            pipeline: The real model or pipeline instance to introspect.
+
+        Returns:
+            Callable[[], str | None]: Reads the current branch name whenever
+                called. Default: always `None` (one shared cache namespace).
+        """
+        return lambda: None
+
     def patch(self, pipeline, manager: CacheManager):
         """Patch every cacheable module of `pipeline` through `manager`.
 
@@ -50,5 +66,8 @@ class BaseAdapter(ABC):
             AbstractContextManager: Restores the original `forward`s on exit.
         """
         return patch_forward(
-            self.cacheable_modules(pipeline), manager, self.step_fn(pipeline)
+            self.cacheable_modules(pipeline),
+            manager,
+            self.step_fn(pipeline),
+            self.context_fn(pipeline),
         )

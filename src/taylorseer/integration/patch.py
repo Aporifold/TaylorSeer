@@ -11,6 +11,7 @@ def patch_forward(
     targets: dict[str, nn.Module],
     manager: CacheManager,
     step_fn: Callable[[], int],
+    context_fn: Callable[[], str | None] | None = None,
 ):
     originals: dict[str, Callable] = {}
     try:
@@ -19,7 +20,8 @@ def patch_forward(
             originals[key] = original
 
             def wrapped(*args, _key=key, _original=original, **kwargs):
-                return manager.wrap(_key, step_fn(), lambda: _original(*args, **kwargs))
+                context = context_fn() if context_fn is not None else None
+                return manager.wrap(_key, step_fn(), lambda: _original(*args, **kwargs), context)
 
             module.forward = wrapped
         yield
