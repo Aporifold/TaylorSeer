@@ -9,10 +9,73 @@ Diffusion Transformers (DiT) have revolutionized high-fidelity image and video s
 
 ## 📋TODO List
 
-- [ ] Initialize this project.
-- [ ] Implement core algorithm of TaylorSeer.
+- [x] Initialize this project.
+- [x] Implement core algorithm of TaylorSeer.
+- [x] Provide inference demos with TaylorSeer acceleration.
 - [ ] Integrate TaylorSeer into more visual generation models.
 
+
+## 📦Installation
+
+In this project, we use [uv](https://github.com/astral-sh/uv) for package management.
+
+1. **Clone this repository and navigate to the TaylorSeer folder:**
+
+```
+git clone https://github.com/Aporifold/TaylorSeer.git
+cd TaylorSeer
+```
+
+2. **Install the inference package:**
+
+```
+uv sync
+```
+
+3. **(Optional) Install the benchmark extra dependencies**, required only for `scripts/benchmark.py`:
+
+```
+uv sync --extra eval
+```
+
+## 🚀Quickstart
+
+The current implementation of TaylorSeer is easy to use and works out of the box. Just wrap the pipeline's cacheable submodules of `diffusers` via an adapter, then monkey-patch them through a `CacheManager` within a `with` block:
+
+```python
+from diffusers import FluxPipeline
+from taylorseer import CacheManager, FluxAdapter, TaylorSeerConfig
+
+pipe = FluxPipeline.from_pretrained(
+    "black-forest-labs/FLUX.1-dev",
+    torch_dtype=torch.bfloat16
+).to("cuda")
+
+config = TaylorSeerConfig(order=2, interval=4, warmup_steps=1)
+manager = CacheManager(config)
+
+with FluxAdapter().patch(pipe, manager):
+    image = pipe("A cat holding a sign that says hello world").images[0]
+```
+
+- `order`: max order of the Taylor expansion used to predict skipped steps (`0` = naive feature reuse).
+- `interval`: number of steps between two full-compute (activation) steps.
+- `warmup_steps`: number of steps at the start of denoising that are always full-compute.
+
+Exiting the `with` block restores the pipeline's original `forward` methods, so the same `pipe` can be reused with or without acceleration.
+
+### 🔌Adapters
+
+Currently, we support 4 adapters: *DiT*, *FLUX*, *Wan2.1*, and *HunyuanVideo*, with each adapter targets one model family. Inference demos can be found in `playground/`. Here is an running example:
+
+```
+python playground/flux.py \
+    --prompt "a fox in a forest" \
+    --enable_taylorseer \
+    --order 2 \
+    --interval 4 \
+    --warmup_steps 1
+```
 
 ## 👏Acknowledgement
 
