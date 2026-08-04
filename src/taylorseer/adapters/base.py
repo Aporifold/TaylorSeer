@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 from torch import nn
 
-from ..core.manager import CacheManager
+from ..core import CacheManager
 from ..integration.patch import patch_forward
 
 
