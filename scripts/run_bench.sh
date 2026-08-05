@@ -41,7 +41,7 @@ for chunk_idx in "${!GPUS[@]}"; do
     echo "[INFO] Launching chunk $chunk_idx / $NUM_GPUS on GPU $gpu_id (Log: $log_file)"
 
     # Set CUDA_VISIBLE_DEVICES so PyTorch maps the selected physical GPU to cuda:0
-    CUDA_VISIBLE_DEVICES=$gpu_id python "$PYTHON_SCRIPT" \
+    CUDA_VISIBLE_DEVICES=$gpu_id python "$BENCH_SCRIPT" \
         --model_path "$MODEL_PATH" \
         --data_path "$DATA_PATH" \
         --output_dir "$OUTPUT_DIR" \
