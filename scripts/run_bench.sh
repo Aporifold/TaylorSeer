@@ -38,8 +38,9 @@ if [[ "$NUM_GPUS" -eq 0 ]]; then
     exit 1
 fi
 
-# Resolve the output directory from the forwarded args (used for log placement
-# and the final summary), falling back to the benchmark script's default.
+# Resolve the output directory and data path from the forwarded args (used for
+# log placement, the final summary, and the quality-metrics report), falling
+# back to the benchmark script's defaults.
 OUTPUT_DIR="outputs"
 for ((i = 0; i < ${#EXTRA_ARGS[@]}; i++)); do
     arg="${EXTRA_ARGS[$i]}"
@@ -51,6 +52,20 @@ for ((i = 0; i < ${#EXTRA_ARGS[@]}; i++)); do
         break
     fi
 done
+
+DATA_PATH="data/drawbench.jsonl"
+for ((i = 0; i < ${#EXTRA_ARGS[@]}; i++)); do
+    arg="${EXTRA_ARGS[$i]}"
+    if [[ "$arg" == "--data_path" ]]; then
+        DATA_PATH="${EXTRA_ARGS[$((i + 1))]}"
+        break
+    elif [[ "$arg" == --data_path=* ]]; then
+        DATA_PATH="${arg#*=}"
+        break
+    fi
+done
+
+QUALITY_METRICS_SCRIPT="${QUALITY_METRICS_SCRIPT:-scripts/run_quality_metrics.sh}"
 
 echo "=========================================="
 echo " Starting Data Parallel Benchmark"
@@ -111,6 +126,11 @@ if [[ $FAIL_COUNT -eq 0 ]]; then
     echo "[SUCCESS] Benchmark completed successfully."
     echo "[SUCCESS] Results saved in: $OUTPUT_DIR"
     echo "=========================================="
+
+    "$QUALITY_METRICS_SCRIPT" \
+        --output_dir "$OUTPUT_DIR" \
+        --data_path "$DATA_PATH"
+
     exit 0
 else
     echo "=========================================="
