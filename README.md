@@ -13,7 +13,8 @@ Here, We provide a highly readable and easy-to-use implementation of TaylorSeer,
 - [x] Initialize this project.
 - [x] Implement core algorithm of TaylorSeer.
 - [x] Provide inference demos with TaylorSeer acceleration.
-- [ ] Support evaluation for image and video models.
+- [x] Support evaluation for image models.
+- [ ] Support evaluation for video models.
 - [ ] Integrate TaylorSeer into more visual generation models.
 
 
