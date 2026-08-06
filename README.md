@@ -66,7 +66,7 @@ with FluxAdapter().patch(pipe, manager):
 
 Exiting the `with` block restores the pipeline's original `forward` methods, so the same `pipe` can be reused with or without acceleration.
 
-### 🔌Adapters
+## 🔌Adapters
 
 Currently, we support 4 adapters: *DiT*, *FLUX*, *Wan2.1*, and *HunyuanVideo*, with each adapter targets one model family. Inference demos can be found in `playground/`. Here is an running example:
 
@@ -78,6 +78,12 @@ python playground/flux.py \
     --interval 4 \
     --warmup_steps 1
 ```
+
+## 🎨Visualizations
+
+![TaylorSeer examples](assets/examples.png)
+
+Above are several examples of qualitative comparison between the baseline and TaylorSeer (N=6, O=2) on the FLUX.1-dev model.
 
 ## 👏Acknowledgement
 
