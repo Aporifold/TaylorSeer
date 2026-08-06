@@ -79,6 +79,21 @@ python playground/flux.py \
     --warmup_steps 1
 ```
 
+## 📊Evaluation
+
+Currently, we support FLUX.1-dev model evaluation, comparing base model against TaylorSeer on [DrawBench](https://docs.google.com/spreadsheets/d/1y7nAbmR4FREi6npB1u-Bo3GFdwdOPYJc617rBOxIRHY/edit?gid=0#gid=0). Here is an evaluation example:
+
+```
+BENCH_SCRIPT=eval/bench.py \
+CUDA_DEVICES=0,1,2,3 \
+DATA_PATH=data/drawbench.jsonl \
+OUTPUT_DIR=outputs/flux \
+MODEL_PATH=black-forest-labs/FLUX.1-dev \
+bash scripts/run_bench.sh
+```
+
+
+
 ## 🎨Visualizations
 
 ![TaylorSeer examples](assets/examples.png)
