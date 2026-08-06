@@ -84,12 +84,12 @@ python playground/flux.py \
 Currently, we support FLUX.1-dev model evaluation, comparing base model against TaylorSeer on [DrawBench](https://docs.google.com/spreadsheets/d/1y7nAbmR4FREi6npB1u-Bo3GFdwdOPYJc617rBOxIRHY/edit?gid=0#gid=0). Here is an evaluation example:
 
 ```
-BENCH_SCRIPT=eval/bench.py \
-CUDA_DEVICES=0,1,2,3 \
-DATA_PATH=data/drawbench.jsonl \
-OUTPUT_DIR=outputs/flux \
-MODEL_PATH=black-forest-labs/FLUX.1-dev \
-bash scripts/run_bench.sh
+CUDA_DEVICES=0,1 ./scripts/run_bench.sh \
+    --model_path black-forest-labs/FLUX.1-dev \
+    --data_path data/drawbench.jsonl \
+    --order 2 --interval 4 --warmup_steps 3 \
+    --num_inference_steps 50 \
+    --output_dir outputs
 ```
 
 
