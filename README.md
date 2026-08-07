@@ -114,17 +114,24 @@ python eval/compute_metrics.py \
     --data_path data/drawbench.jsonl
 ```
 
-| Method                              | Latency (s) | Speedup | Image Reward $\uparrow$ | CLIPScore $\uparrow$ | PSNR $\uparrow$ | SSIM $\uparrow$ | LPIPS $\downarrow$ |
-| ----------------------------------- | ----------- | ------- | ----------------------- | -------------------- | --------------- | --------------- | ------------------ |
-| FLUX.1-dev                          |             |         | 0.8069                  | 31.264               | -               | -               | -                  |
-| TaylorSeer ($\mathcal{N}=4$, $O=2$) |             |         | 0.7864                  | 31.133               | 17.567          | 0.7539          | 0.2721             |
-| TaylorSeer ($\mathcal{N}=5$, $O=2$) |             |         |                         |                      |                 |                 |                    |
+Based on the current implementation of TaylorSeer and evaluation, we conduct experiments on DrawBench using FLUX.1-dev with different TaylorSeer parameters. The results are shown in the table below.
 
-**Note**: The PSNR, SSIM, LPIPS, and CLIPScore metrics are computed using `torchmetrics` , while Image Reward score are calculated using `image-reward`. Concretely, we use `openai/clip-vit-base-patch16` for CLIPScore.
+| Method                              | Latency (s) | Speedup | Image Reward | CLIPScore | PSNR   | SSIM   | LPIPS  |
+| ----------------------------------- | ----------- | ------- | ------------ | --------- | ------ | ------ | ------ |
+| FLUX.1-dev                          | 24.01       | 1.00x   | 0.8069       | 31.264    | -      | -      | -      |
+| TaylorSeer ($\mathcal{N}=4$, $O=2$) | 10.84       | 2.36x   | 0.7864       | 31.133    | 17.567 | 0.7539 | 0.2721 |
+| TaylorSeer ($\mathcal{N}=5$, $O=2$) | 9.34        | 2.57x   | 0.7837       | 31.158    | 16.089 | 0.7091 | 0.3364 |
+| TaylorSeer ($\mathcal{N}=6$, $O=1$) | 7.50        | 3.20x   | 0.7914       | 31.316    | 16.902 | 0.7161 | 0.3190 |
+| TaylorSeer ($\mathcal{N}=6$, $O=2$) | 8.52        | 2.82x   | 0.7948       | 31.207    | 14.933 | 0.6514 | 0.4072 |
+
+**Note**: The PSNR, SSIM, LPIPS, and CLIPScore metrics are computed using `torchmetrics` , while Image Reward score are calculated using `image-reward`. Concretely, we use `openai/clip-vit-base-patch16` for CLIPScore, while evaluating LPIPS using `AlexNet`.
+
+- *Higher is better*: PSNR, SSIM, CLIPScore, and Image Reward.
+- *Lower is better*: LPIPS.
 
 ## 🎨Visualizations
 
-![TaylorSeer examples](assets/examples.png)
+![Qualitive Examples on FLUX.1-dev](assets/comparisons.png)
 
 Above are several examples of qualitative comparison between the baseline and TaylorSeer (N=6, O=2) on the FLUX.1-dev model.
 
