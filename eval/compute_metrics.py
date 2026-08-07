@@ -17,45 +17,67 @@ def to_tensor(images: list[Image.Image]) -> torch.Tensor:
     return torch.stack([tvf.to_tensor(image.convert("RGB")) for image in images])
 
 
+def _pair_batches(
+    pred: list[Image.Image],
+    target: list[Image.Image],
+    batch_size: int,
+    device: str,
+):
+    """Yield `(pred, target)` tensor batches of shape ``[B, C, H, W]`` in ``[0, 1]``."""
+    for i in range(0, len(pred), batch_size):
+        yield to_tensor(pred[i : i + batch_size]).to(device), to_tensor(
+            target[i : i + batch_size]
+        ).to(device)
+
+
 @torch.inference_mode()
 def calculate_psnr(
-    pred: torch.Tensor,
-    target: torch.Tensor,
+    pred: list[Image.Image],
+    target: list[Image.Image],
     device: str = "cuda",
+    batch_size: int = 32,
 ) -> float:
     metric = PeakSignalNoiseRatio(
         data_range=1.0,
         reduction="elementwise_mean",
     ).to(device)
-    score: torch.Tensor = metric(pred, target)
+    for pred_batch, target_batch in _pair_batches(pred, target, batch_size, device):
+        metric.update(pred_batch, target_batch)
+    score: torch.Tensor = metric.compute()
     return float(score.detach().cpu().item())
 
 
 @torch.inference_mode()
 def calculate_ssim(
-    pred: torch.Tensor,
-    target: torch.Tensor,
+    pred: list[Image.Image],
+    target: list[Image.Image],
     device: str = "cuda",
+    batch_size: int = 32,
 ) -> float:
     metric = StructuralSimilarityIndexMeasure(
         data_range=1.0,
         reduction="elementwise_mean",
     ).to(device)
-    score: torch.Tensor = metric(pred, target)
+    for pred_batch, target_batch in _pair_batches(pred, target, batch_size, device):
+        metric.update(pred_batch, target_batch)
+    score: torch.Tensor = metric.compute()
     return float(score.detach().cpu().item())
 
 
 @torch.inference_mode()
 def calculate_lpips(
-    pred: torch.Tensor,
-    target: torch.Tensor,
+    pred: list[Image.Image],
+    target: list[Image.Image],
     device: str = "cuda",
+    batch_size: int = 32,
 ) -> float:
     metric = LearnedPerceptualImagePatchSimilarity(
         net_type="alex",
         normalize=True,
     ).to(device)
-    score: torch.Tensor = metric(pred, target)
+    for pred_batch, target_batch in _pair_batches(pred, target, batch_size, device):
+        metric.update(pred_batch, target_batch)
+    score: torch.Tensor = metric.compute()
     return float(score.detach().cpu().item())
 
 
@@ -64,12 +86,15 @@ def calculate_clip_score(
     pred: list[Image.Image],
     prompts: list[str],
     device: str = "cuda",
+    batch_size: int = 32,
 ) -> float:
     metric = CLIPScore(model_name_or_path="openai/clip-vit-base-patch16").to(device)
     # CLIPScore's HF image processor always rescales by 1/255, so it expects
     # pixel values in [0, 255] rather than the [0, 1] range `to_tensor` gives.
-    images = (to_tensor(pred) * 255).to(device)
-    score: torch.Tensor = metric(images, prompts)
+    for i in range(0, len(pred), batch_size):
+        images = (to_tensor(pred[i : i + batch_size]) * 255).to(device)
+        metric.update(images, prompts[i : i + batch_size])
+    score: torch.Tensor = metric.compute()
     return float(score.detach().cpu().item())
 
 
@@ -135,13 +160,15 @@ def calculate_image_reward(
 
 @torch.inference_mode()
 def calculate_fid(
-    pred: torch.Tensor,
-    target: torch.Tensor,
+    pred: list[Image.Image],
+    target: list[Image.Image],
     device: str = "cuda",
+    batch_size: int = 32,
 ) -> float:
     metric = FrechetInceptionDistance(normalize=True).to(device)
-    metric.update(target, real=True)
-    metric.update(pred, real=False)
+    for pred_batch, target_batch in _pair_batches(pred, target, batch_size, device):
+        metric.update(target_batch, real=True)
+        metric.update(pred_batch, real=False)
     score: torch.Tensor = metric.compute()
     return float(score.detach().cpu().item())
 
@@ -151,21 +178,18 @@ def compute_all_metrics(
     target: list[Image.Image],
     prompts: list[str],
     device: str = "cuda",
+    batch_size: int = 32,
 ):
-    # transforms to tensors, ranging in [0, 1].
-    pred_tensor = to_tensor(pred).to(device)
-    target_tensor = to_tensor(target).to(device)
-
     # 1. compute PSNR, SSIM, LPIPS scores.
-    psnr = calculate_psnr(pred_tensor, target_tensor, device)
-    ssim = calculate_ssim(pred_tensor, target_tensor, device)
-    lpips = calculate_lpips(pred_tensor, target_tensor, device)
+    psnr = calculate_psnr(pred, target, device, batch_size)
+    ssim = calculate_ssim(pred, target, device, batch_size)
+    lpips = calculate_lpips(pred, target, device, batch_size)
 
     # 2. compute FID score.
-    fid = calculate_fid(pred_tensor, target_tensor, device)
+    fid = calculate_fid(pred, target, device, batch_size)
 
     # 3. compute CLIP score.
-    clip_score = calculate_clip_score(pred, prompts, device)
+    clip_score = calculate_clip_score(pred, prompts, device, batch_size)
 
     # 4. compute image reward score.
     image_reward_score = calculate_image_reward(pred, prompts, device)
