@@ -73,11 +73,15 @@ class TaylorSeerCache:
                 tuple of tensors) of what was passed to `update`.
         """
         distance = step - self.last_step
-        pred = self.cache[0]
+        # Run taylor expansion sum in fp32, preventing overflow (inf).
+        orig = self.cache[0]
+        pred = _elementwise(lambda x: x.float(), orig)
         fact_i, dist_i = 1, distance
         for i in range(1, self.order + 1):
             if i not in self.cache:
                 break
-            pred = _elementwise(lambda p, c: p + c / fact_i * dist_i, pred, self.cache[i])
-            fact_i, dist_i = fact_i * i, dist_i * distance
-        return pred
+            fact_i *= i
+            term = _elementwise(lambda x: x.float(), self.cache[i])
+            pred = _elementwise(lambda p, c: p + c / fact_i * dist_i, pred, term)
+            dist_i *= distance
+        return _elementwise(lambda p, o: p.to(o.dtype), pred, orig)
