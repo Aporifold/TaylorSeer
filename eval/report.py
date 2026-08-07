@@ -8,16 +8,16 @@ from compute_metrics import compute_all_metrics
 from PIL import Image
 from transformers.hf_argparser import HfArgumentParser
 
-BASELINE_RE = re.compile(r"^(\d+)_baseline_(\d+)\.png$")
-TAYLORSEER_RE = re.compile(r"^(\d+)_taylorseer_(\d+)\.png$")
+BASELINE_RE = re.compile(r"^(\d+)\.png$")
+TAYLORSEER_RE = re.compile(r"^(\d+)\.png$")
 
 
 @dataclass
 class ReportArguments:
     """Arguments for computing quality metrics from `eval/bench.py` outputs.
 
-    - output_dir (str): Directory containing the `{idx}_baseline_{i}.png` /
-      `{idx}_taylorseer_{i}.png` pairs saved by `eval/bench.py`.
+    - output_dir (str): Directory containing the `base/{idx:04d}.png` /
+      `taylorseer/{idx:04d}.png` pairs saved by `eval/bench.py`.
     - data_path (str): The same --data_path used to run the benchmark, to recover
       each sample's prompt.
     - device (str): Device to run the metrics on.
@@ -31,20 +31,24 @@ class ReportArguments:
     report_path: str | None = field(default=None)
 
 
-def _index_images(output_dir: Path, pattern: re.Pattern) -> dict[tuple[int, int], Path]:
-    images: dict[tuple[int, int], Path] = {}
-    for path in output_dir.glob("*.png"):
+def _index_images(subdir: Path, pattern: re.Pattern) -> dict[int, Path]:
+    images: dict[int, Path] = {}
+    for path in subdir.glob("*.png"):
         match = pattern.match(path.name)
         if match:
-            images[(int(match.group(1)), int(match.group(2)))] = path
+            images[int(match.group(1))] = path
     return images
 
 
 def collect_pairs(output_dir: str) -> list[tuple[int, Path, Path]]:
-    """Pair up baseline/taylorseer images saved by `eval/bench.py` in `output_dir`."""
+    """Pair up baseline/taylorseer images saved by `eval/bench.py` in `output_dir`.
+
+    Baseline images are read from `<output_dir>/base/`, TaylorSeer images from
+    `<output_dir>/taylorseer/`, both named `{idx:04d}.png`.
+    """
     root = Path(output_dir)
-    baseline = _index_images(root, BASELINE_RE)
-    taylorseer = _index_images(root, TAYLORSEER_RE)
+    baseline = _index_images(root / "base", BASELINE_RE)
+    taylorseer = _index_images(root / "taylorseer", TAYLORSEER_RE)
 
     keys = sorted(baseline.keys() & taylorseer.keys())
     unpaired = baseline.keys() ^ taylorseer.keys()
@@ -58,8 +62,8 @@ def collect_pairs(output_dir: str) -> list[tuple[int, Path, Path]]:
         )
 
     return [
-        (global_idx, baseline[(global_idx, i)], taylorseer[(global_idx, i)])
-        for global_idx, i in keys
+        (global_idx, baseline[global_idx], taylorseer[global_idx])
+        for global_idx in keys
     ]
 
 

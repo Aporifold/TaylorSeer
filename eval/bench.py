@@ -88,7 +88,7 @@ class BenchmarkArguments:
 def load_model(model_path: str, device: str):
     return FluxPipeline.from_pretrained(
         model_path,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,
     ).to(device)
 
 
@@ -165,7 +165,10 @@ def main(
     baseline_latency = 0.0
     taylorseer_latency = 0.0
     output_dir = Path(bench_args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    baseline_dir = output_dir / "base"
+    taylorseer_dir = output_dir / "taylorseer"
+    baseline_dir.mkdir(parents=True, exist_ok=True)
+    taylorseer_dir.mkdir(parents=True, exist_ok=True)
 
     # main benchmark loop
     for idx, (global_idx, sample) in enumerate(zip(indexes, samples)):
@@ -211,8 +214,8 @@ def main(
         for i, (baseline_img, taylorseer_img) in enumerate(
             zip(baseline_images, taylorseer_images)
         ):
-            baseline_img.save(output_dir / f"{global_idx:02d}_baseline_{i:02d}.png")
-            taylorseer_img.save(output_dir / f"{global_idx:02d}_taylorseer_{i:02d}.png")
+            baseline_img.save(baseline_dir / f"{global_idx:04d}.png")
+            taylorseer_img.save(taylorseer_dir / f"{global_idx:04d}.png")
 
     # report speedup
     speedup = (
