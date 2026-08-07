@@ -1,26 +1,27 @@
 #!/usr/bin/env bash
 #
-# Compute quality metrics (PSNR/SSIM/LPIPS/FID/CLIP score/ImageReward) from the
-# baseline/taylorseer image pairs that `eval/bench.py` saves to --output_dir.
+# Compute quality/latency metrics (PSNR/SSIM/LPIPS/FID/CLIP score/ImageReward
+# and the speedup) from the JSONL run logs that `eval/bench.py` writes.
 #
-# Thin wrapper around `eval/report.py`; every argument passed to this script is
-# forwarded verbatim, e.g.:
+# Thin wrapper around `eval/compute_metrics.py`; every argument passed to this
+# script is forwarded verbatim, e.g.:
 #
 #   ./scripts/run_quality_metrics.sh \
-#       --output_dir outputs \
+#       --base_log outputs/logs/base.jsonl \
+#       --taylorseer_log outputs/logs/taylorseer_o2_i4_w3.jsonl \
 #       --data_path data/drawbench.jsonl \
 #       --device cuda
 #
-# Called automatically at the end of `scripts/run_bench.sh` once every chunk has
-# finished; can also be run standalone once bench outputs exist.
+# Called automatically at the end of a `--method taylorseer` run of
+# `scripts/run_bench.sh`; can also be run standalone once both runs exist.
 
 set -euo pipefail
 
-REPORT_SCRIPT="${REPORT_SCRIPT:-eval/report.py}"
+METRICS_SCRIPT="${METRICS_SCRIPT:-eval/compute_metrics.py}"
 
 echo "=========================================="
 echo " Computing Quality Metrics"
-echo " Report Script: $REPORT_SCRIPT"
+echo " Metrics Script: $METRICS_SCRIPT"
 echo "=========================================="
 
-python "$REPORT_SCRIPT" "$@"
+python "$METRICS_SCRIPT" "$@"
