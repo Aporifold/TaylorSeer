@@ -35,7 +35,7 @@ cd TaylorSeer
 uv sync
 ```
 
-3. **(Optional) Install the benchmark extra dependencies**, required only for `scripts/benchmark.py`:
+3. **(Optional) Install the benchmark extra dependencies**, required only for the evaluation scripts in `eval/`:
 
 ```
 uv sync --extra eval
@@ -82,18 +82,45 @@ python playground/flux.py \
 
 ## 📊Evaluation
 
-Currently, we support FLUX.1-dev model evaluation, comparing base model against TaylorSeer on [DrawBench](https://docs.google.com/spreadsheets/d/1y7nAbmR4FREi6npB1u-Bo3GFdwdOPYJc617rBOxIRHY/edit?gid=0#gid=0). Here is an evaluation example:
+Currently, we support FLUX.1-dev model evaluation, comparing base model against TaylorSeer on [DrawBench](https://docs.google.com/spreadsheets/d/1y7nAbmR4FREi6npB1u-Bo3GFdwdOPYJc617rBOxIRHY/edit?gid=0#gid=0). Each run benchmarks a single method (e.g., base, taylorseer).
 
 ```
+# 1. baseline (run once)
 CUDA_DEVICES=0,1 ./scripts/run_bench.sh \
+    --method base \
+    --model_path black-forest-labs/FLUX.1-dev \
+    --data_path data/drawbench.jsonl \
+    --num_inference_steps 50 \
+    --run_name base \
+    --output_dir outputs
+
+# 2. TaylorSeer (run with different params)
+CUDA_DEVICES=0,1 ./scripts/run_bench.sh \
+    --method taylorseer \
     --model_path black-forest-labs/FLUX.1-dev \
     --data_path data/drawbench.jsonl \
     --order 2 --interval 4 --warmup_steps 3 \
     --num_inference_steps 50 \
+    --run_name taylorseer_o2_i4_w3 \
     --output_dir outputs
 ```
 
+Every run writes its images to `outputs/<run_name>/` and a per-sample JSONL log to `outputs/logs/<run_name>.jsonl`, where `<run_name>` defaults to `base` / `taylorseer_o{order}_i{interval}_w{warmup_steps}`. In addition, a TaylorSeer run will automatically report quality metrics and the speedup against base model; the report can also be regenerated from the logs alone:
 
+```
+python eval/compute_metrics.py \
+    --base_log outputs/logs/base.jsonl \
+    --taylorseer_log outputs/logs/taylorseer_o2_i4_w3.jsonl \
+    --data_path data/drawbench.jsonl
+```
+
+| Method                              | Latency (s) | Speedup | Image Reward $\uparrow$ | CLIPScore $\uparrow$ | PSNR $\uparrow$ | SSIM $\uparrow$ | LPIPS $\downarrow$ |
+| ----------------------------------- | ----------- | ------- | ----------------------- | -------------------- | --------------- | --------------- | ------------------ |
+| FLUX.1-dev                          |             |         | 0.8069                  | 31.264               | -               | -               | -                  |
+| TaylorSeer ($\mathcal{N}=4$, $O=2$) |             |         | 0.7864                  | 31.133               | 17.567          | 0.7539          | 0.2721             |
+| TaylorSeer ($\mathcal{N}=5$, $O=2$) |             |         |                         |                      |                 |                 |                    |
+
+**Note**: The PSNR, SSIM, LPIPS, and CLIPScore metrics are computed using `torchmetrics` , while Image Reward score are calculated using `image-reward`. Concretely, we use `openai/clip-vit-base-patch16` for CLIPScore.
 
 ## 🎨Visualizations
 
